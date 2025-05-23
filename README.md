@@ -137,6 +137,7 @@ The framework includes the following test cases:
 | `test_iam_create_admin_role_should_fail.py` | `iam:CreateRole` with admin privileges | ❌ Fail | Verifies the role cannot create admin roles without permission boundaries |
 | `test_ssm_parameter_create_should_succeed.py` | `ssm:PutParameter` in `/test/` namespace | ✅ Pass | Verifies the role can create SSM parameters in the allowed namespace |
 | `test_ssm_parameter_create_should_fail.py` | `ssm:PutParameter` in `/platform/` namespace | ❌ Fail | Verifies the role cannot create SSM parameters in the restricted namespace |
+| `test_ssm_parameter_region_should_fail.py` | `ssm:PutParameter` in `us-west-1` region | ❌ Fail | Verifies the role cannot create SSM parameters in restricted regions |
 
 ### Test Template for Successful Action
 
