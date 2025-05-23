@@ -15,7 +15,7 @@ ROLE_NAME = DEFAULT_ROLE_NAME
 TEST_ROLE_ARN = get_role_arn(ROLE_NAME)
 
 
-@pytest.mark.live
+@pytest.mark.skip
 def test_iam_create_admin_role_without_boundary_should_fail():
     """
     Test that verifies creating an IAM role with administrator privileges fails

@@ -138,6 +138,7 @@ The framework includes the following test cases:
 | `test_ssm_parameter_create_should_succeed.py` | `ssm:PutParameter` in `/test/` namespace | ✅ Pass | Verifies the role can create SSM parameters in the allowed namespace |
 | `test_ssm_parameter_create_should_fail.py` | `ssm:PutParameter` in `/platform/` namespace | ❌ Fail | Verifies the role cannot create SSM parameters in the restricted namespace |
 | `test_ssm_parameter_region_should_fail.py` | `ssm:PutParameter` in `us-west-1` region | ❌ Fail | Verifies the role cannot create SSM parameters in restricted regions |
+| `test_iam_pipeline_boundary_modify_should_fail.py` | `iam:CreatePolicyVersion` on protected policy | ❌ Fail | Verifies the role cannot modify the protected `platform/workload_boundary` policy |
 
 ### Test Template for Successful Action
 
