@@ -64,6 +64,7 @@ def test_iam_create_admin_role_without_boundary_should_fail():
     
     # Verify the error is related to permissions or boundaries
     error_code = e.value.response["Error"]["Code"]
+    print(f'{e.value.response=}')
     assert error_code in ["AccessDenied", "UnauthorizedOperation"], \
            f"Expected AccessDenied or UnauthorizedOperation, got {error_code}"
     

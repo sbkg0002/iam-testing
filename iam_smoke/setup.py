@@ -19,7 +19,7 @@ def create_test_role(
     permissions: List[Dict[str, Any]] = None,
     region: str = DEFAULT_REGION,
     permission_boundary_arn: Optional[str] = None,
-    trust_principal: str = "arn:aws:iam::*:root",
+    aws_account_id: Optional[str] = None,  # Changed parameter
     description: str = "IAM smoke test role",
 ) -> str:
     """
@@ -45,8 +45,7 @@ def create_test_role(
                     {
                         "Effect": "Allow",
                         "Action": [
-                            "s3:ListBucket",
-                            "s3:GetObject",
+                            "s3:*",
                             "ec2:DescribeInstances",
                             "iam:ListRoles"
                         ],
@@ -56,20 +55,25 @@ def create_test_role(
             }
         ]
     
+    # Create IAM client
+    iam = boto3.client("iam", region_name=region)
+    
+    # If account ID not provided, get the current account ID
+    if aws_account_id is None:
+        sts = boto3.client("sts", region_name=region)
+        aws_account_id = sts.get_caller_identity()["Account"]
+        
     # Create assume role policy document
     assume_role_policy_document = json.dumps({
         "Version": "2012-10-17",
         "Statement": [
             {
                 "Effect": "Allow",
-                "Principal": {"AWS": trust_principal},
+                "Principal": {"AWS": f"arn:aws:iam::{aws_account_id}:root"},
                 "Action": "sts:AssumeRole"
             }
         ]
     })
-    
-    # Create IAM client
-    iam = boto3.client("iam", region_name=region)
     
     try:
         # Check if role already exists
@@ -184,42 +188,66 @@ def create_random_test_role(
     return role_name, role_arn
 
 
-def setup_test_bucket(bucket_name: str = DEFAULT_TEST_BUCKET, region: str = DEFAULT_REGION) -> None:
+def setup_test_bucket(bucket_name: str = DEFAULT_TEST_BUCKET, region: str = DEFAULT_REGION) -> str:
     """
     Create a test S3 bucket for smoke testing if it doesn't exist.
     
     Args:
         bucket_name: Name of the bucket to create
         region: AWS region
+        
+    Returns:
+        str: The name of the bucket that was created or verified
     """
+    # Ensure bucket name is unique by adding account ID suffix if needed
+    original_bucket_name = bucket_name
     s3 = boto3.client("s3", region_name=region)
+    
+    # Get AWS account ID for uniqueness
+    sts = boto3.client("sts", region_name=region)
+    account_id = sts.get_caller_identity()["Account"]
     
     try:
         # Check if bucket exists
         s3.head_bucket(Bucket=bucket_name)
-        logger.info(f"Bucket {bucket_name} already exists")
+        logger.info(f"Bucket {bucket_name} already exists and is accessible")
+        return bucket_name
     except ClientError as e:
         error_code = e.response["Error"]["Code"]
-        if error_code == "404" or error_code == "NoSuchBucket":
-            # Create the bucket
-            if region == "us-east-1":
-                s3.create_bucket(Bucket=bucket_name)
-            else:
-                s3.create_bucket(
-                    Bucket=bucket_name,
-                    CreateBucketConfiguration={
-                        "LocationConstraint": region
-                    }
-                )
-            logger.info(f"Created bucket {bucket_name} in region {region}")
+        
+        # If forbidden (403) or no such bucket (404), create a new bucket with unique name
+        if error_code == "403" or error_code == "404" or error_code == "NoSuchBucket":
+            # Make bucket name unique with account ID and random suffix
+            if error_code == "403":
+                logger.warning(f"Bucket {bucket_name} exists but is not accessible, creating a unique bucket")
+                # Create a unique name based on original + account ID + random suffix
+                random_suffix = uuid.uuid4().hex[:8]
+                bucket_name = f"{original_bucket_name}-{account_id}-{random_suffix}".lower()
             
-            # Add a test object
-            s3.put_object(
-                Bucket=bucket_name,
-                Key="restricted.txt",
-                Body="This is a restricted test file."
-            )
-            logger.info(f"Added test object 'restricted.txt' to bucket {bucket_name}")
+            # Create the bucket
+            try:
+                if region == "us-east-1":
+                    s3.create_bucket(Bucket=bucket_name)
+                else:
+                    s3.create_bucket(
+                        Bucket=bucket_name,
+                        CreateBucketConfiguration={
+                            "LocationConstraint": region
+                        }
+                    )
+                logger.info(f"Created bucket {bucket_name} in region {region}")
+                
+                # Add a test object
+                s3.put_object(
+                    Bucket=bucket_name,
+                    Key="restricted.txt",
+                    Body="This is a restricted test file."
+                )
+                logger.info(f"Added test object 'restricted.txt' to bucket {bucket_name}")
+                return bucket_name
+            except ClientError as e:
+                logger.error(f"Error creating bucket or adding test object: {str(e)}")
+                raise
         else:
             logger.error(f"Error checking bucket {bucket_name}: {str(e)}")
             raise

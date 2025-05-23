@@ -6,7 +6,7 @@ Centralized configuration for IAM smoke tests
 DEFAULT_ROLE_NAME = "TestRoleNnykLTLY"
 
 # Default test bucket for S3 tests
-DEFAULT_TEST_BUCKET = "my-smoke-test-bucket"
+DEFAULT_TEST_BUCKET = "iam-smoke-test-static-bucket-2938721"
 
 # Default AWS region
 DEFAULT_REGION = "eu-central-1"

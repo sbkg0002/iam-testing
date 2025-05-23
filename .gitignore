@@ -1,5 +1,6 @@
 # Python related entries
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.so
