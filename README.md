@@ -11,39 +11,6 @@ The framework follows this workflow for smoke testing IAM permissions:
 3. **Execute API Calls** - Perform operations against AWS services
 4. **Assert Results** - Verify expected outcomes (success or failure)
 
-```mermaid
-graph TD
-    A[Start] --> B[Create Test Resources]
-    B --> C[IAM Role]
-    B --> D[S3 Bucket]
-    C --> E[Assume IAM Role]
-    E --> F[Get Temporary Credentials]
-    E --> G[Execute API Calls]
-    G --> H[S3 Operations]
-    G --> I[EC2 Operations]
-    G --> J[IAM Operations]
-    J --> K[Assert Results]
-    K --> L[Success Tests]
-    K --> M[Failure Tests]
-    K --> N[End]
-    
-    classDef default color:black
-    style A fill:#d5e8d4,stroke:#82b366
-    style B fill:#dae8fc,stroke:#6c8ebf
-    style C fill:#ffe6cc,stroke:#d79b00
-    style D fill:#ffe6cc,stroke:#d79b00
-    style E fill:#dae8fc,stroke:#6c8ebf
-    style F fill:#e1d5e7,stroke:#9673a6
-    style G fill:#dae8fc,stroke:#6c8ebf
-    style H fill:#e1d5e7,stroke:#9673a6
-    style I fill:#e1d5e7,stroke:#9673a6
-    style J fill:#e1d5e7,stroke:#9673a6
-    style K fill:#dae8fc,stroke:#6c8ebf
-    style L fill:#d5e8d4,stroke:#82b366
-    style M fill:#f8cecc,stroke:#b85450
-    style N fill:#d5e8d4,stroke:#82b366
-```
-
 The diagram above illustrates the flow of the IAM smoke testing process. For more details, see the [full workflow documentation](docs/iam-smoke-workflow.md).
 
 ## 🔍 Purpose
@@ -168,6 +135,8 @@ The framework includes the following test cases:
 | `test_ec2_describe_should_pass.py`    | `ec2:DescribeInstances` | ✅ Pass   | Verifies the role can describe EC2 instances |
 | `test_iam_list_roles_should_succeed.py` | `iam:ListRoles`       | ✅ Pass   | Verifies the role can list IAM roles |
 | `test_iam_create_admin_role_should_fail.py` | `iam:CreateRole` with admin privileges | ❌ Fail | Verifies the role cannot create admin roles without permission boundaries |
+| `test_ssm_parameter_create_should_succeed.py` | `ssm:PutParameter` in `/test/` namespace | ✅ Pass | Verifies the role can create SSM parameters in the allowed namespace |
+| `test_ssm_parameter_create_should_fail.py` | `ssm:PutParameter` in `/platform/` namespace | ❌ Fail | Verifies the role cannot create SSM parameters in the restricted namespace |
 
 ### Test Template for Successful Action
 
