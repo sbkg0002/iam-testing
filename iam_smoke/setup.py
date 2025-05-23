@@ -45,9 +45,7 @@ def create_test_role(
                     {
                         "Effect": "Allow",
                         "Action": [
-                            "s3:*",
-                            "ec2:DescribeInstances",
-                            "iam:ListRoles"
+                            "*"
                         ],
                         "Resource": "*"
                     }
