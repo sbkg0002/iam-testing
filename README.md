@@ -72,14 +72,8 @@ uv run iam-smoke setup --role
 # Create a test role with a permission boundary
 uv run iam-smoke setup --role --permission-boundary arn:aws:iam::123456789012:policy/MyBoundary
 
-# Use a custom role name
-uv run iam-smoke setup --role --role-name CustomRoleName
-
 # Create the default test S3 bucket
 uv run iam-smoke setup --bucket
-
-# Create a custom S3 bucket
-uv run iam-smoke setup --bucket --bucket-name my-custom-bucket
 
 # Create both role and bucket in one command
 uv run iam-smoke setup --role --bucket
@@ -93,9 +87,6 @@ uv run iam-smoke setup --role --bucket --region eu-west-1
 ```bash
 # Remove the default test role
 uv run iam-smoke teardown --role
-
-# Remove a custom test role
-uv run iam-smoke teardown --role --role-name CustomRoleName
 ```
 
 ### Programmatic Resource Management
@@ -114,10 +105,10 @@ role_arn = create_test_role(
 )
 
 # Create a test bucket
-setup_test_bucket(bucket_name="my-test-bucket", region="eu-central-1")
+setup_test_bucket(region="eu-central-1")
 
 # Clean up resources
-delete_test_role(role_name="TestRoleName")
+delete_test_role()
 ```
 
 ## 🧪 Writing Tests
