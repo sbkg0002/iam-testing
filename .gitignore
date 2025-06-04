@@ -79,3 +79,6 @@ credentials.csv
 
 # Logs
 *.log
+
+tests/manual.py
+.windsurfrules
