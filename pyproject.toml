@@ -8,23 +8,17 @@ version = "0.1.0"
 description = "AWS IAM smoke testing framework"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
-dependencies = [
-    "boto3>=1.26.0",
-    "pytest>=7.0.0",
-]
+license = { text = "MIT" }
+dependencies = ["boto3>=1.26.0", "pytest>=7.0.0"]
 
 [project.scripts]
 iam-smoke = "iam_smoke.cli:main"
 
 [project.optional-dependencies]
-dev = [
-    "ruff",
-    "mypy",
-]
+dev = ["ruff", "mypy"]
 
 [tool.ruff]
-line-length = 88
+line-length = 120
 target-version = "py311"
 
 [tool.ruff.lint]
@@ -42,6 +36,4 @@ line-ending = "auto"
 markers = [
     "live: marks tests that run against live AWS (slow, requires credentials)",
 ]
-filterwarnings = [
-    "ignore::DeprecationWarning:botocore.*:",
-]
+filterwarnings = ["ignore::DeprecationWarning:botocore.*:"]

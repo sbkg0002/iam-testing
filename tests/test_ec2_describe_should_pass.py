@@ -1,11 +1,11 @@
 """
 Test that verifies a role can describe EC2 instances.
 """
-import boto3
+
 import pytest
-from botocore.exceptions import ClientError
+
+from iam_smoke.config import DEFAULT_REGION, DEFAULT_ROLE_NAME
 from iam_smoke.tester import assume_role_session, get_role_arn
-from iam_smoke.config import DEFAULT_ROLE_NAME, DEFAULT_REGION
 
 # This role is expected to have ec2:DescribeInstances permission
 ROLE_NAME = DEFAULT_ROLE_NAME

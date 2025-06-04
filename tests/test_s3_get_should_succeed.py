@@ -1,11 +1,11 @@
 """
 Test that verifies a role can get an object from an S3 bucket.
 """
-import boto3
+
 import pytest
-from botocore.exceptions import ClientError
+
+from iam_smoke.config import DEFAULT_REGION, DEFAULT_ROLE_NAME, DEFAULT_TEST_BUCKET
 from iam_smoke.tester import assume_role_session, get_role_arn
-from iam_smoke.config import DEFAULT_ROLE_NAME, DEFAULT_TEST_BUCKET, DEFAULT_REGION
 
 # This role is expected to have s3:GetObject permission
 ROLE_NAME = DEFAULT_ROLE_NAME
@@ -23,7 +23,7 @@ def test_s3_get_object_should_succeed():
     s3 = session.client("s3")
 
     response = s3.get_object(Bucket=TEST_BUCKET, Key=OBJECT_KEY)
-    
+
     # Verify we got a valid response with object content
     assert "Body" in response
     assert "ContentLength" in response
