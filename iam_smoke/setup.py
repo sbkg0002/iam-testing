@@ -19,8 +19,9 @@ def create_test_role(
     permissions: List[Dict[str, Any]] = None,
     region: str = DEFAULT_REGION,
     permission_boundary_arn: Optional[str] = None,
-    aws_account_id: Optional[str] = None,  # Changed parameter
+    aws_account_id: Optional[str] = None,
     description: str = "IAM smoke test role",
+    clone_from_role: Optional[str] = None,
 ) -> str:
     """
     Create a test IAM role for smoke testing with optional permission boundary.
@@ -30,31 +31,82 @@ def create_test_role(
         permissions: List of IAM policy documents to attach
         region: AWS region
         permission_boundary_arn: ARN of permission boundary policy to apply (optional)
-        trust_principal: Principal allowed to assume the role
+        aws_account_id: AWS account ID (if None, uses current account)
         description: Role description
+        clone_from_role: Name of an existing role to clone policies and boundary from (optional)
         
     Returns:
         str: ARN of the created role
     """
-    if permissions is None:
-        # Default permissions for smoke testing
-        permissions = [
-            {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Action": [
-                            "*"
-                        ],
-                        "Resource": "*"
-                    }
-                ]
-            }
-        ]
-    
     # Create IAM client
     iam = boto3.client("iam", region_name=region)
+    
+    # If cloning from an existing role, get its policies and boundary
+    cloned_policies = []
+    cloned_boundary_arn = None
+    
+    if clone_from_role:
+        logger.info(f"Cloning policies and boundary from role: {clone_from_role}")
+        try:
+            # Get the role to check if it exists and get its permission boundary
+            role_response = iam.get_role(RoleName=clone_from_role)
+            role_data = role_response.get('Role', {})
+            
+            # Get the permission boundary if it exists
+            if 'PermissionsBoundary' in role_data:
+                cloned_boundary_arn = role_data['PermissionsBoundary'].get('PermissionsBoundaryArn')
+                logger.info(f"Cloned permission boundary: {cloned_boundary_arn}")
+                
+                # Use the cloned boundary unless explicitly overridden
+                if permission_boundary_arn is None:
+                    permission_boundary_arn = cloned_boundary_arn
+            
+            # Get inline policies
+            policy_names_response = iam.list_role_policies(RoleName=clone_from_role)
+            policy_names = policy_names_response.get('PolicyNames', [])
+            
+            for policy_name in policy_names:
+                policy_response = iam.get_role_policy(
+                    RoleName=clone_from_role,
+                    PolicyName=policy_name
+                )
+                
+                # Convert the policy document from URL-encoded JSON to a dictionary
+                policy_doc = json.loads(policy_response.get('PolicyDocument'))
+                cloned_policies.append(policy_doc)
+                logger.info(f"Cloned inline policy: {policy_name}")
+            
+            # Get attached managed policies
+            managed_policies_response = iam.list_attached_role_policies(RoleName=clone_from_role)
+            managed_policies = managed_policies_response.get('AttachedPolicies', [])
+            
+            # We'll store the ARNs of managed policies to attach later
+            managed_policy_arns = [policy['PolicyArn'] for policy in managed_policies]
+            
+        except ClientError as e:
+            logger.error(f"Error cloning from role {clone_from_role}: {str(e)}")
+            raise
+    
+    # Use cloned policies if available and no explicit policies provided
+    if permissions is None:
+        if cloned_policies:
+            permissions = cloned_policies
+        else:
+            # Default permissions for smoke testing if not cloning
+            permissions = [
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "*"
+                            ],
+                            "Resource": "*"
+                        }
+                    ]
+                }
+            ]
     
     # If account ID not provided, get the current account ID
     if aws_account_id is None:
@@ -112,6 +164,18 @@ def create_test_role(
                 PolicyDocument=json.dumps(policy_doc)
             )
             logger.info(f"Attached inline policy {policy_name} to role {role_name}")
+        
+        # Attach managed policies if we cloned from an existing role
+        if clone_from_role and 'managed_policy_arns' in locals():
+            for policy_arn in managed_policy_arns:
+                try:
+                    iam.attach_role_policy(
+                        RoleName=role_name,
+                        PolicyArn=policy_arn
+                    )
+                    logger.info(f"Attached managed policy {policy_arn} to role {role_name}")
+                except ClientError as e:
+                    logger.warning(f"Failed to attach managed policy {policy_arn}: {str(e)}")
             
         return role_arn
         
@@ -139,6 +203,13 @@ def delete_test_role(role_name: str = DEFAULT_ROLE_NAME, region: str = DEFAULT_R
         for policy_name in response["PolicyNames"]:
             iam.delete_role_policy(RoleName=role_name, PolicyName=policy_name)
             logger.info(f"Deleted inline policy {policy_name} from role {role_name}")
+        
+        # Detach all managed policies
+        managed_policies_response = iam.list_attached_role_policies(RoleName=role_name)
+        for policy in managed_policies_response.get('AttachedPolicies', []):
+            policy_arn = policy['PolicyArn']
+            iam.detach_role_policy(RoleName=role_name, PolicyArn=policy_arn)
+            logger.info(f"Detached managed policy {policy_arn} from role {role_name}")
         
         # Then we can delete the role
         iam.delete_role(RoleName=role_name)

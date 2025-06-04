@@ -14,7 +14,7 @@ RESTRICTED_PARAMETER_NAME = "/platform/test/parameter"
 PARAMETER_VALUE = "test-value"
 
 
-@pytest.mark.skip
+@pytest.mark.live
 def test_ssm_parameter_create_should_fail():
     """
     Test that the role cannot create an SSM parameter in the /platform/ namespace.

@@ -72,6 +72,9 @@ uv run iam-smoke setup --role
 # Create a test role with a permission boundary
 uv run iam-smoke setup --role --permission-boundary arn:aws:iam::123456789012:policy/MyBoundary
 
+# Clone an existing role (including its policies and boundary)
+uv run iam-smoke setup --role --clone-from-role ExistingRoleName
+
 # Create the default test S3 bucket
 uv run iam-smoke setup --bucket
 
@@ -102,6 +105,11 @@ role_arn = create_test_role()
 # Create a role with a permission boundary
 role_arn = create_test_role(
     permission_boundary_arn="arn:aws:iam::123456789012:policy/MyBoundary"
+)
+
+# Clone an existing role (including its policies and boundary)
+role_arn = create_test_role(
+    clone_from_role="ExistingRoleName"
 )
 
 # Create a test bucket
